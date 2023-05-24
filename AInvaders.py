@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import random
 
 # initialize Pygame
 pygame.init()
@@ -46,23 +47,27 @@ class Player(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
+import random
+
 class Alien(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.image = pygame.image.load('alien.png')
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
-        self.direction = 1
+        self.direction = random.choice([-1, 1])  # Randomly choose initial direction
         self.vertical_speed = HEIGHT / (10 * 60 * 20)  # Number of pixels to move each frame (reduce speed)
 
     def update(self):
         self.rect.x += 2 * self.direction
         if self.rect.right > WIDTH or self.rect.left < 0:
-            self.rect.y += self.vertical_speed  # Use the calculated vertical speed
             self.direction *= -1  # Change direction
+            self.rect.x += 2 * self.direction  # Move alien back on screen
+            self.rect.y += self.vertical_speed  # Move down
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -132,11 +137,17 @@ while True:
         bullet.draw(screen)
 
     # Check for collisions
-    collisions = pygame.sprite.spritecollide(player, aliens, False, pygame.sprite.collide_rect)
-    for alien in collisions:
-        print(f'Player was hit by an alien at {alien.rect.topleft}!')
-        pygame.quit()
-        sys.exit()
+    collisions = pygame.sprite.groupcollide(bullets, aliens, True, True, pygame.sprite.collide_rect)
+    for bullet, alien_list in collisions.items():
+        print(f'Bullet hit {len(alien_list)} aliens!')
+        for alien in alien_list:
+            # Generate random x and y coordinates for the new alien
+            new_alien_x = random.randint(0, WIDTH)
+            new_alien_y = random.randint(0, HEIGHT/2)  # To prevent spawning aliens too close to the bottom
+            # Create a new alien at the random position
+            new_alien = Alien(new_alien_x, new_alien_y)
+            # Add the new alien to the aliens group
+            aliens.add(new_alien)
 
     collisions = pygame.sprite.groupcollide(bullets, aliens, True, True, pygame.sprite.collide_rect)
     for bullet, alien_list in collisions.items():
